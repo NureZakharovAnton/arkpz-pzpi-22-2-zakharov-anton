@@ -2,17 +2,17 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 
+const mockUser = {
+  id: '123',
+  name: 'John Doe',
+  email: 'john@example.com',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+
 describe('UsersController', () => {
   let controller: UsersController;
   let userService: UsersService;
-
-  const mockUser = {
-    id: '123',
-    name: 'John Doe',
-    email: 'john@example.com',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
