@@ -1,4 +1,6 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsIn, IsNotEmpty, IsString } from 'class-validator';
+import { UserRole } from './user.types';
+import { USER_ROLES_VALUES } from './user.constants';
 
 export class CreateUserDto {
   @IsString()
@@ -12,4 +14,9 @@ export class CreateUserDto {
   @IsString()
   @IsNotEmpty()
   readonly password: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsIn([USER_ROLES_VALUES])
+  readonly role: UserRole;
 }

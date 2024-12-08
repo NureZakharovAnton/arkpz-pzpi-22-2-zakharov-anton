@@ -8,6 +8,7 @@ const mockJob = {
   _id: '640c14e5b5f4ee1234567890',
   name: 'Test',
   description: 'Test',
+  creator: '640c14e5b',
   createdAt: new Date(),
   updatedAt: new Date(),
   save: jest.fn().mockResolvedValue(this),
@@ -46,7 +47,12 @@ describe('JobsService', () => {
 
   describe('create', () => {
     it('should create a new job', async () => {
-      const jobDto = { name: 'Test', description: 'test' };
+      const jobDto = {
+        name: 'Test',
+        description: 'test',
+        price: 100,
+        creator: '640c14e5b',
+      };
       const result = await service.create(jobDto);
 
       expect(mockJobModel.create).toHaveBeenCalledWith(jobDto);

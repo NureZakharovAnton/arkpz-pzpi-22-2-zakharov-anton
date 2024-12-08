@@ -1,11 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { getModelToken } from '@nestjs/mongoose';
+import { JwtService } from '@nestjs/jwt';
+import { Model } from 'mongoose';
+import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
-import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
-import { getModelToken } from '@nestjs/mongoose';
 import { User } from '../users/user.entity';
-import { Model } from 'mongoose';
+import { USER_ROLES } from '../users/user.constants';
 
 const mockUser = {
   _id: '1',
@@ -126,6 +127,7 @@ describe('AuthService', () => {
         email: 'test@example.com',
         password: 'password',
         name: 'test',
+        role: USER_ROLES.CUSTOMER,
       };
       const hashedPassword = 'hashedPassword';
       jest.spyOn(bcrypt, 'hash').mockResolvedValue(hashedPassword);

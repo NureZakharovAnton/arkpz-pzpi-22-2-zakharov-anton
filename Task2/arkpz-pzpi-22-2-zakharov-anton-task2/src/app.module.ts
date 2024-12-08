@@ -1,6 +1,5 @@
-import { Module, ValidationPipe } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { APP_PIPE } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './modules/users/users.module';
@@ -17,12 +16,6 @@ import { JobsModule } from './modules/jobs/jobs.module';
     JobsModule,
   ],
   controllers: [AppController],
-  providers: [
-    AppService,
-    {
-      provide: APP_PIPE,
-      useValue: new ValidationPipe({ whitelist: true }),
-    },
-  ],
+  providers: [AppService],
 })
 export class AppModule {}

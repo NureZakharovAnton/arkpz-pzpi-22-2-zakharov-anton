@@ -41,6 +41,8 @@ describe('JobsController', () => {
       const dto = {
         name: 'Test',
         description: 'Test',
+        price: 100,
+        creator: '640c14e5b',
       };
       const result = await jobsController.create(dto);
 
