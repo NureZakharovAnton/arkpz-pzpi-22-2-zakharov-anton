@@ -7,8 +7,8 @@ export class JobsController {
   constructor(private readonly jobsService: JobsService) {}
 
   @Post()
-  async create(@Body() createJobDto: CreateJobDto) {
-    return this.jobsService.create(createJobDto);
+  async create(@Body() body: CreateJobDto) {
+    return this.jobsService.create(body);
   }
 
   @Get()

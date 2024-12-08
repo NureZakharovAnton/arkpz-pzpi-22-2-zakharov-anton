@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
+import { User } from '../users/user.entity';
 
 export type JobDocument = HydratedDocument<Job>;
 
@@ -10,6 +11,12 @@ export class Job {
 
   @Prop({ required: true })
   description: string;
+
+  @Prop({ required: true })
+  price: number;
+
+  @Prop({ type: Types.ObjectId, ref: User.name, required: true })
+  creator: Types.ObjectId;
 }
 
 export const JobSchema = SchemaFactory.createForClass(Job);

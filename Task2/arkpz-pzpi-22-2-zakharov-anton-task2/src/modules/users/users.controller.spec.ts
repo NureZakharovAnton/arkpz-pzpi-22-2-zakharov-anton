@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
+import { USER_ROLES } from './user.constants';
 
 const mockUser = {
   id: '123',
@@ -42,6 +43,7 @@ describe('UsersController', () => {
         name: 'John Doe',
         email: 'john@example.com',
         password: 'password',
+        role: USER_ROLES.CUSTOMER,
       };
       const result = await controller.create(dto);
 
