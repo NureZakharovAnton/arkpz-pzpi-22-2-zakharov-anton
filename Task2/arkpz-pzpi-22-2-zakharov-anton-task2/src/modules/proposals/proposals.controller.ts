@@ -1,6 +1,14 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
+} from '@nestjs/common';
 import { ProposalsService } from './proposals.service';
-import { CreateProposalDto } from './proposals.dto';
+import { CreateProposalDto, UpdateProposalDto } from './proposals.dto';
 
 @Controller('proposals')
 export class ProposalsController {
@@ -14,5 +22,20 @@ export class ProposalsController {
   @Get()
   async findAll() {
     return this.proposalsService.findAll();
+  }
+
+  @Get(':id')
+  async findById(@Param('id') id: string) {
+    return this.proposalsService.findById(id);
+  }
+
+  @Put(':id')
+  async updateById(@Param('id') id: string, @Body() body: UpdateProposalDto) {
+    return this.proposalsService.updateById(id, body);
+  }
+
+  @Delete(':id')
+  async deleteById(@Param('id') id: string) {
+    return this.proposalsService.deleteById(id);
   }
 }

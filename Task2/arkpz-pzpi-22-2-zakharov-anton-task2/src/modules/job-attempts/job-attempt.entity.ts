@@ -8,7 +8,7 @@ import {
   JobAttemptAssigneeSchema,
 } from './schemas/job-attempt-assignee.entity';
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, collection: 'jobAttempts' })
 export class JobAttempt {
   @Prop({ type: Types.ObjectId, ref: Job.name, required: true })
   job: Types.ObjectId;

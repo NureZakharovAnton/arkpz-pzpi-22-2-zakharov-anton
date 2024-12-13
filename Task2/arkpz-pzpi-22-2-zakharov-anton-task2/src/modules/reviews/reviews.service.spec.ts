@@ -19,7 +19,9 @@ const mockReview = {
 const mockReviewModel = {
   create: jest.fn().mockResolvedValue(mockReview),
   find: jest.fn().mockReturnValue({
-    exec: jest.fn().mockResolvedValue([mockReview]),
+    populate: jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue([mockReview]),
+    }),
   }),
   save: jest.fn(),
 };

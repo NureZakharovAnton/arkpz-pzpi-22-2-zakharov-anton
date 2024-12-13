@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsNumber, IsPositive, IsString } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+} from 'class-validator';
 
 export class CreateJobDto {
   @IsString()
@@ -17,4 +23,23 @@ export class CreateJobDto {
   @IsNotEmpty()
   @IsString()
   creator: string;
+}
+
+export class UpdateJobDto {
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsNumber()
+  @IsPositive()
+  @IsOptional()
+  price?: number;
+
+  @IsString()
+  @IsOptional()
+  creator?: string;
 }

@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
 import { User } from '../../users/user.entity';
-import { IsIn, IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { IsIn, IsNotEmpty, IsString } from 'class-validator';
 
 export type JobAttemptAssigneeStatus =
   (typeof JOB_ATTEMPT_ASSIGNEE_STATUSES)[keyof typeof JOB_ATTEMPT_ASSIGNEE_STATUSES];
@@ -17,7 +17,7 @@ export const JOB_ATTEMPT_ASSIGNEE_STATUSES_VALUES = Object.values(
 );
 
 export class CreateJobAttemptAssigneeDto {
-  @IsUUID()
+  @IsString()
   @IsNotEmpty()
   readonly user: string;
 

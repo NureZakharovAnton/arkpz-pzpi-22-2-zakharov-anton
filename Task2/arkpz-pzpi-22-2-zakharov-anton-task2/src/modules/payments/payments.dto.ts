@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsString, IsDate, IsIn } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString, IsIn } from 'class-validator';
 import { PAYMENT_STATUSES_VALUES } from './payment.constants';
 import { PaymentStatus } from './payment.types';
 
@@ -19,8 +19,4 @@ export class CreatePaymentDto {
   @IsNotEmpty()
   @IsIn(PAYMENT_STATUSES_VALUES)
   readonly status: PaymentStatus;
-
-  @IsDate()
-  @IsNotEmpty()
-  readonly paymentDate: Date;
 }

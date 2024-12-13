@@ -18,9 +18,6 @@ export class Payment {
 
   @Prop({ required: true, enum: PAYMENT_STATUSES_VALUES })
   status: PaymentStatus;
-
-  @Prop({ type: Date, required: true })
-  paymentDate: Date;
 }
 
 export const PaymentSchema = SchemaFactory.createForClass(Payment);

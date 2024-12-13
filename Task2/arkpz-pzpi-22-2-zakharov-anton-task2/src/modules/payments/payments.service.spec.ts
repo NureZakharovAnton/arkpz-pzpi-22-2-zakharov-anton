@@ -11,7 +11,6 @@ const mockPayment = {
   user: '640c14e5b5f4ee1234567892',
   amount: 100.0,
   status: PAYMENT_STATUSES.SUCCESS,
-  paymentDate: new Date(),
   createdAt: new Date(),
   updatedAt: new Date(),
   save: jest.fn().mockResolvedValue(this),
@@ -20,7 +19,9 @@ const mockPayment = {
 const mockPaymentModel = {
   create: jest.fn().mockResolvedValue(mockPayment),
   find: jest.fn().mockReturnValue({
-    exec: jest.fn().mockResolvedValue([mockPayment]),
+    populate: jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue([mockPayment]),
+    }),
   }),
   save: jest.fn(),
 };
@@ -55,7 +56,6 @@ describe('PaymentService', () => {
         user: '640c14e5b5f4ee1234567892',
         amount: 100.0,
         status: PAYMENT_STATUSES.SUCCESS,
-        paymentDate: new Date(),
       };
       const result = await service.create(paymentDto);
 
