@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreatePaymentDto } from './payments.dto';
@@ -17,6 +17,10 @@ export class PaymentService {
   }
 
   async findAll() {
-    return this.paymentModel.find().exec();
+    return this.paymentModel.find().populate(['job', 'user']).exec();
+  }
+
+  async findById(id: string) {
+    return this.paymentModel.findById(id).populate(['job', 'user']).exec();
   }
 }

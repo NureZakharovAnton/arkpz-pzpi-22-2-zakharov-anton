@@ -17,6 +17,21 @@ export class ProposalsService {
   }
 
   async findAll() {
-    return this.proposalModel.find().exec();
+    return this.proposalModel.find().populate(['job', 'user']).exec();
+  }
+
+  async findById(id: string) {
+    return this.proposalModel.findById(id).populate(['job', 'user']).exec();
+  }
+
+  async updateById(id: string, updateProposalDto: CreateProposalDto) {
+    return this.proposalModel
+      .findByIdAndUpdate(id, updateProposalDto, { new: true })
+      .populate(['job', 'user'])
+      .exec();
+  }
+
+  async deleteById(id: string) {
+    return this.proposalModel.findByIdAndDelete(id).exec();
   }
 }

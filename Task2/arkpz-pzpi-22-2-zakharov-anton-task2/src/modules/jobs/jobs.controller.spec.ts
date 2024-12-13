@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JobsController } from './jobs.controller';
 import { JobsService } from './jobs.service';
+import { JobAttemptsService } from '../job-attempts/job-attempts.service';
 
 const mockJob = {
   id: '123',
@@ -13,6 +14,7 @@ const mockJob = {
 describe('JobsController', () => {
   let jobsController: JobsController;
   let jobsService: JobsService;
+  let jobAttemptsService: JobAttemptsService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -25,11 +27,19 @@ describe('JobsController', () => {
             findAll: jest.fn().mockResolvedValue([mockJob]),
           },
         },
+        {
+          provide: JobAttemptsService,
+          useValue: {
+            findByJobId: jest.fn().mockResolvedValue([mockJob]),
+            create: jest.fn().mockResolvedValue(mockJob),
+          },
+        },
       ],
     }).compile();
 
     jobsController = module.get<JobsController>(JobsController);
     jobsService = module.get<JobsService>(JobsService);
+    jobAttemptsService = module.get<JobAttemptsService>(JobAttemptsService);
   });
 
   it('should be defined', () => {
@@ -56,6 +66,15 @@ describe('JobsController', () => {
       const result = await jobsController.findAll();
 
       expect(jobsService.findAll).toHaveBeenCalled();
+      expect(result).toEqual([mockJob]);
+    });
+  });
+
+  describe('findAttempts', () => {
+    it('should call JobAttemptsService.findByJobId and return an array of job attempts', async () => {
+      const result = await jobsController.findAttempts('123');
+
+      expect(jobAttemptsService.findByJobId).toHaveBeenCalledWith('123');
       expect(result).toEqual([mockJob]);
     });
   });

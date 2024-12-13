@@ -21,3 +21,25 @@ export class CreateReviewDto {
   @IsOptional()
   readonly comment?: string;
 }
+
+export class UpdateReviewDto {
+  @IsString()
+  @IsOptional()
+  readonly job?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly reviewer?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly reviewee?: string;
+
+  @IsNumber()
+  @IsOptional()
+  readonly rating?: number;
+
+  @IsString()
+  @IsOptional()
+  readonly comment?: string;
+}

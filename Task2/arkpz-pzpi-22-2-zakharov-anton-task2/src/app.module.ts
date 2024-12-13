@@ -10,6 +10,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { JobAttemptsModule } from './modules/job-attempts/job-attempts.module';
 import { ProposalsModule } from './modules/proposals/proposals.module';
+import { AuthGuard } from './modules/auth/auth.guard';
 
 @Module({
   imports: [
@@ -24,6 +25,12 @@ import { ProposalsModule } from './modules/proposals/proposals.module';
     ProposalsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: 'APP_GUARD',
+      useClass: AuthGuard,
+    },
+  ],
 })
 export class AppModule {}

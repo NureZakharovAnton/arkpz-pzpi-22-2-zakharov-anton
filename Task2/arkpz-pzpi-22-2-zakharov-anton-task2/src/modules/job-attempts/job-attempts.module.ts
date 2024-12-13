@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { JobAttemptsController } from './job-attempts.controller';
 import { JobAttemptsService } from './job-attempts.service';
 import { JobAttempt, JobAttemptSchema } from './job-attempt.entity';
 
@@ -10,7 +9,7 @@ import { JobAttempt, JobAttemptSchema } from './job-attempt.entity';
       { name: JobAttempt.name, schema: JobAttemptSchema },
     ]),
   ],
-  controllers: [JobAttemptsController],
+  controllers: [],
   providers: [JobAttemptsService],
   exports: [JobAttemptsService],
 })

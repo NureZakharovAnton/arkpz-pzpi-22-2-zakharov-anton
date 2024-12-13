@@ -1,5 +1,11 @@
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsString, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsArray,
+  ValidateNested,
+  IsOptional,
+} from 'class-validator';
 import { CreateJobAttemptAssigneeDto } from './schemas/job-attempt-assignee.entity';
 
 export class CreateJobAttemptDto {
@@ -15,4 +21,14 @@ export class CreateJobAttemptDto {
   @ValidateNested({ each: true })
   @Type(() => CreateJobAttemptAssigneeDto)
   readonly assignees: CreateJobAttemptAssigneeDto[];
+}
+
+export class UpdateJobAttemptDto {
+  @IsString()
+  @IsOptional()
+  readonly job: string;
+
+  @IsString()
+  @IsOptional()
+  readonly status: string;
 }
