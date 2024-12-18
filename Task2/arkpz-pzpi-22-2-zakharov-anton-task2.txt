@@ -774,7 +774,180 @@ All endpoints follow consistent error response format:
     ],
     "code": "400"
 }
+ 
+ДОДАТОК Д
+ПРОГРАМНИЙ КОД
 
+Фрагмент сервісу auth модуля:
+1  @Injectable()
+2  export class AuthService {
+3    constructor(
+4      private readonly usersService: UsersService,
+5      private readonly jwtService: JwtService,
+6    ) {}
+7
+8    async login(email: string, password: string) {
+9      const user = await this.validateUser(email, password);
+10     if (!user) {
+11       throw new UnauthorizedException('Invalid credentials');
+12     }
+13
+14     const payload = { sub: user._id, email: user.email };
+15     const accessToken = this.jwtService.sign(payload);
+16
+17     return { accessToken };
+18   }
+19
+20   async register(userDto: CreateUserDto) {
+21     const hashedPassword = await bcrypt.hash(userDto.password, 10);
+22     const newUser = { ...userDto, password: hashedPassword };
+23     return this.usersService.create(newUser);
+24   }
+25
+26   async validateUser(email: string, password: string) {
+27     const user = await this.usersService.findByEmail(email);
+28     if (user && (await bcrypt.compare(password, user.password))) {
+29       return user;
+30     }
+31
+32     return null;
+33   }
+34 }
+
+Фрагмент контролеру auth модуля:
+1  @Controller('auth')
+2  export class AuthController {
+3    constructor(private readonly authService: AuthService) {}
+4
+5    @Public()
+6    @Post('login')
+7    async login(@Body() body: LoginDto) {
+8      return this.authService.login(body.email, body.password);
+9    }
+10
+11   @Public()
+12   @Post('register')
+13   async register(@Body() body: CreateUserDto) {
+14     return this.authService.register(body);
+15   }
+16 }
+
+Фрагмент auth модуля:
+1  @Module({
+2    imports: [
+3      UsersModule,
+4      JwtModule.registerAsync({
+5        global: true,
+6        imports: [ConfigModule],
+7        useFactory: async (configService: ConfigService) => ({
+8          secret: configService.get<string>('JWT_SECRET'),
+9          signOptions: { expiresIn: '1d' },
+10       }),
+11       inject: [ConfigService],
+12     }),
+13   ],
+14   controllers: [AuthController],
+15   providers: [AuthService],
+16   exports: [AuthService],
+17 })
+
+Фрагмент схеми user:
+1  @Schema({ timestamps: true })
+2  export class User {
+3    @Prop({ required: true })
+4    name: string;
+5
+6    @Prop({ required: true, unique: true })
+7    email: string;
+8
+9    @Prop({ required: true })
+10   password: string;
+11
+12   @Prop({ required: true, enum: USER_ROLES_VALUES })
+13   role: UserRole;
+14 }
+
+Фрагмент сервісу users модуля:
+1  @Injectable()
+2  export class UsersService {
+3    constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+4
+5    async create(createUserDto: CreateUserDto) {
+6      const user = this.userModel.create(createUserDto);
+7      return user;
+8    }
+9
+10   async findAll() {
+11     const user = await this.userModel.find().exec();
+12     return user;
+13   }
+14
+15   async findByEmail(email: string) {
+16     const user = await this.userModel.findOne({ email }).exec();
+17     return user;
+18   }
+19
+20   async findById(id: string) {
+21     const user = await this.userModel.findById(id).exec();
+22     return user;
+23   }
+24
+25   async updateById(id: string, updateUserDto: UpdateUserDto) {
+26     const user = await this.userModel.findOneAndUpdate(
+27       { _id: id },
+28       updateUserDto,
+29       {
+30         new: true,
+31       },
+32     );
+33
+34     return user;
+35   }
+36
+37   async deleteById(id: string) {
+38     const user = await this.userModel.findOneAndDelete({ _id: id });
+39     return user;
+40   }
+41 }
+
+Фрагмент контролеру users модуля:
+1  @Controller('users')
+2  export class UsersController {
+3    constructor(private readonly userService: UsersService) {}
+4
+5    @Post()
+6    async create(@Body() body: CreateUserDto) {
+7      return this.userService.create(body);
+8    }
+9
+10   @Get()
+11   async findAll() {
+12     return this.userService.findAll();
+13   }
+14
+15   @Get('me')
+16   getProfile(@Request() req) {
+17     return req.user;
+18   }
+19
+20   @Get(':id')
+21   async findById(@Param('id') id: string) {
+22     return this.userService.findById(id);
+23   }
+24
+25   @Put(':id')
+26   async updateById(@Param('id') id: string, @Body() body: UpdateUserDto) {
+27     return this.userService.updateById(id, body);
+28   }
+29
+30   @Delete('me')
+31   async deleteById(@Request() req) {
+32     const id = req.user?.sub;
+33
+34     return this.userService.deleteById(id);
+35   }
+36 }
+ 
 ДОДАТОК Е
 ВІДЕО НА ЮТУБ
 
