@@ -1,0 +1,487 @@
+Харківський університет радіоелектроніки
+Факультет комп'ютерних наук
+Кафедра програмної інженерії
+
+
+
+
+ЗВІТ 
+до практичної роботи номер 2 з дисципліни 
+"Аналіз та рефакторинг коду" 
+на тему: " Методи рефакторингу коду програмного забезпечення"
+
+
+
+
+Виконав ст. гр. ПЗПІ-22-2
+Захаров Антон Володимирович
+
+Перевірив
+ст. викладач кафедри ПІ
+Сокорчук Ігор Петрович
+
+
+
+
+
+
+
+
+Харків 2024
+МЕТА
+
+Дослідити та практично застосувати методи рефакторингу коду для покращення його структури, підвищення читабельності та спрощення подальшої підтримки програмного забезпечення.
+
+ВСТУП
+
+Рефакторинг є невід'ємною частиною процесу розробки програмного забезпечення, що фокусується на покращенні внутрішньої структури коду без зміни його зовнішньої поведінки. 
+
+Основні причини для проведення рефакторингу:
+• Технічний борг - накопичення неоптимальних рішень у коді
+• Складність розширення - труднощі при додаванні нових функцій
+• Проблеми з підтримкою - витрати часу на розуміння та модифікацію коду
+• Дублювання коду - повторення однакової логіки в різних місцях
+
+У цьому звіті розглянуто три ключові методи рефакторингу:
+• Extract Method
+• Replace Temp with Query  
+• Introduce Parameter Object
+
+Кожен з цих методів спрямований на вирішення конкретних проблем та має свої особливості застосування.
+ 
+МЕТОДИ РЕФАКТОРИНГУ КОДУ
+
+1. Extract Method (Виділення методу)
+Метод полягає у виділенні частини коду в окремий метод [1], назва якого пояснює його призначення. Це один з найбільш фундаментальних прийомів рефакторингу.
+
+Опис проблеми: Довгі методи складні для розуміння та підтримки. Вони часто містять багато рівнів абстракції в одному місці, що ускладнює повторне використання коду та тестування.
+
+Кроки рефакторингу:
+1. Визначити логічно завершений фрагмент коду
+2. Перевірити, чи не використовуються локальні змінні поза цим фрагментом
+3. Створити новий метод з описовою назвою
+4. Скопіювати обраний код у новий метод
+5. Замінити старий код викликом нового методу
+
+Приклад:
+//поганий приклад
+function generateInvoice(order: Order): void {
+    console.log("Створення рахунку");
+    
+    let subtotal = 0;
+    for (const item of order.items) {
+        subtotal += item.price * item.quantity;
+    }
+    
+    const tax = subtotal * 0.2;
+    const total = subtotal + tax;
+    
+    console.log(`Сума без податків: ${subtotal}`);
+    console.log(`Податок: ${tax}`);
+    console.log(`Загальна сума: ${total}`);
+    
+    const today = new Date();
+    const dueDate = new Date();
+    dueDate.setDate(today.getDate() + 30);
+    
+    console.log(`Дата створення: ${today.toLocaleDateString()}`);
+    console.log(`Термін оплати: ${dueDate.toLocaleDateString()}`);
+}
+
+//виправлений приклад
+function generateInvoice(order: Order): void {
+    console.log("Створення рахунку");
+    
+    const { subtotal, tax, total } = calculateTotals(order);
+    printFinancialDetails(subtotal, tax, total);
+    printDates();
+}
+
+function calculateTotals(order: Order) {
+    let subtotal = 0;
+    for (const item of order.items) {
+        subtotal += item.price * item.quantity;
+    }
+    const tax = subtotal * 0.2;
+    const total = subtotal + tax;
+    return { subtotal, tax, total };
+}
+
+function printFinancialDetails(subtotal: number, tax: number, total: number): void {
+    console.log(`Сума без податків: ${subtotal}`);
+    console.log(`Податок: ${tax}`);
+    console.log(`Загальна сума: ${total}`);
+}
+
+function printDates(): void {
+    const today = new Date();
+    const dueDate = new Date();
+    dueDate.setDate(today.getDate() + 30);
+    
+    console.log(`Дата створення: ${today.toLocaleDateString()}`);
+    console.log(`Термін оплати: ${dueDate.toLocaleDateString()}`);
+}
+
+Переваги отриманого коду:
+• Покращена читабельність - кожен метод виконує одну конкретну задачу
+• Можливість повторного використання - виділені методи можна викликати з інших місць
+• Спрощене тестування - можливість окремо тестувати кожен метод
+• Зменшення дублювання - схожа логіка тепер зібрана в одному місці
+
+2. Replace Temp with Query (Заміна тимчасової змінної запитом)
+Метод передбачає заміну тимчасових змінних викликами методів. Це робить код більш об'єктно-орієнтованим та усуває надмірне використання локальних змінних.
+
+Опис проблеми: Тимчасові змінні часто ускладнюють розуміння коду, особливо коли вони використовуються для зберігання проміжних результатів обчислень. Вони можуть призвести до дублювання логіки та ускладнити рефакторинг методів.
+
+Кроки рефакторингу:
+1. Переконатися, що змінна обчислюється лише один раз
+2. Створити приватний метод, який повертає значення змінної
+3. Замінити всі звернення до змінної викликом методу
+4. Видалити тимчасову змінну
+5. За потреби застосувати кешування [2] результату
+
+Приклад:
+//поганий приклад
+class OrderProcessor {
+    private order: Order;
+
+    constructor(order: Order) {
+        this.order = order;
+    }
+
+    calculateTotal(): number {
+        const basePrice = this.order.quantity * this.order.itemPrice;
+        const discount = basePrice > 1000 ? basePrice * 0.1 : 0;
+        const shippingCost = basePrice > 500 ? 0 : 50;
+        const tax = (basePrice - discount) * 0.2;
+        
+        return basePrice - discount + shippingCost + tax;
+    }
+}
+
+//виправлений приклад
+class OrderProcessor {
+    private order: Order;
+
+    constructor(order: Order) {
+        this.order = order;
+    }
+
+    calculateTotal(): number {
+        return this.getBasePrice() - 
+               this.getDiscount() + 
+               this.getShippingCost() + 
+               this.getTax();
+    }
+
+    private getBasePrice(): number {
+        return this.order.quantity * this.order.itemPrice;
+    }
+
+    private getDiscount(): number {
+        return this.getBasePrice() > 1000 ? this.getBasePrice() * 0.1 : 0;
+    }
+
+    private getShippingCost(): number {
+        return this.getBasePrice() > 500 ? 0 : 50;
+    }
+
+    private getTax(): number {
+        return (this.getBasePrice() - this.getDiscount()) * 0.2;
+    }
+}
+
+Переваги отриманого коду:
+• Інкапсуляція логіки [3] - кожне обчислення тепер в окремому методі
+• Покращена підтримка - зміни в логіці розрахунків локалізовані в одному місці
+• Усунення дублювання - проміжні обчислення можна використовувати в інших методах
+• Спрощене тестування - можливість тестувати кожен компонент розрахунку окремо
+
+3. Introduce Parameter Object (Введення об'єкта-параметра)
+Метод полягає у групуванні пов'язаних параметрів в окремий об'єкт [4]. Це особливо корисно, коли декілька методів використовують однаковий набір параметрів.
+
+Опис проблеми: Методи з великою кількістю параметрів складні для розуміння та використання. Часто одні й ті ж групи параметрів [5] передаються через різні методи, що створює зайве дублювання та ускладнює підтримку коду.
+
+Кроки рефакторингу:
+1. Створити новий клас для зберігання параметрів
+2. Визначити, які параметри логічно пов'язані між собою
+3. Перенести ці параметри в новий клас
+4. Оновити сигнатури методів для використання нового класу
+5. Оновити всі виклики методів
+
+Приклад:
+//поганий приклад
+class ReportGenerator {
+    generateReport(
+        startDate: Date,
+        endDate: Date,
+        department: string,
+        includeSubdepartments: boolean,
+        format: string,
+        sendEmail: boolean,
+        emailRecipients: string[]
+    ): Report {
+        // перевірка дат
+        if (startDate > endDate) {
+            throw new Error("Некоректний період звіту");
+        }
+
+        // логіка генерації звіту
+        const data = this.collectData(
+            startDate, 
+            endDate, 
+            department, 
+            includeSubdepartments
+        );
+
+        // форматування звіту
+        const report = this.formatReport(data, format);
+
+        // відправка email
+        if (sendEmail) {
+            this.sendReportByEmail(report, emailRecipients);
+        }
+
+        return report;
+    }
+}
+
+//виправлений приклад
+interface ReportPeriod {
+    startDate: Date;
+    endDate: Date;
+}
+
+interface DepartmentFilter {
+    department: string;
+    includeSubdepartments: boolean;
+}
+
+interface ReportDelivery {
+    sendEmail: boolean;
+    emailRecipients: string[];
+}
+
+class ReportConfig {
+    constructor(
+        public period: ReportPeriod,
+        public filter: DepartmentFilter,
+        public format: string,
+        public delivery: ReportDelivery
+    ) {}
+
+    validatePeriod(): void {
+        if (this.period.startDate > this.period.endDate) {
+            throw new Error("Некоректний період звіту");
+        }
+    }
+}
+
+class ReportGenerator {
+    generateReport(config: ReportConfig): Report {
+        // перевірка дат
+        config.validatePeriod();
+
+        // логіка генерації звіту
+        const data = this.collectData(
+            config.period,
+            config.filter
+        );
+
+        // форматування звіту
+        const report = this.formatReport(data, config.format);
+
+        // відправка email
+        if (config.delivery.sendEmail) {
+            this.sendReportByEmail(report, config.delivery.emailRecipients);
+        }
+
+        return report;
+    }
+
+    private collectData(period: ReportPeriod, filter: DepartmentFilter) {
+        // логіка збору даних
+    }
+
+    private formatReport(data: any, format: string): Report {
+        // логіка форматування
+    }
+
+    private sendReportByEmail(report: Report, recipients: string[]): void {
+        // логіка відправки email
+    }
+}
+
+// Використання:
+const reportConfig = new ReportConfig(
+    { startDate: new Date(), endDate: new Date() },
+    { department: "Sales", includeSubdepartments: true },
+    "PDF",
+    { sendEmail: true, emailRecipients: ["user@example.com"] }
+);
+
+const generator = new ReportGenerator();
+const report = generator.generateReport(reportConfig);
+
+Переваги отриманого коду:
+• Краща організація - пов'язані параметри згруповані разом
+• Типобезпека - структура параметрів чітко визначена через інтерфейси
+• Розширюваність - легко додавати нові параметри без зміни сигнатур методів
+• Повторне використання - конфігурація може використовуватися в різних місцях
+• Інкапсуляція - валідація може бути частиною об'єкта конфігурації
+
+ 
+ІНСТРУМЕНТИ РЕФАКТОРИНГУ
+
+1. Спеціалізовані інструменти для TypeScript
+• TSLint та ESLint з TypeScript-плагінами:
+- Автоматичне виявлення потенційних проблем
+- Перевірка дотримання правил написання коду
+- Пропозиції щодо рефакторингу
+Приклад конфігурації:
+{
+  "rules": {
+    "no-unused-vars": "error",
+    "max-len": ["error", { "code": 80 }],
+    "complexity": ["error", 5]
+  }
+}
+
+• TypeScript Compiler API:
+- Програмний аналіз коду
+- Автоматична трансформація AST
+- Створення власних інструментів рефакторингу
+
+2. Інтегровані рішення в сучасних IDE
+• VS Code з TypeScript:
+- CodeActions для автоматичного рефакторингу
+- Quick Fix пропозиції
+- Навігація по коду та пошук референсів
+Корисні розширення:
+- TypeScript Hero: організація імпортів
+- Move TS: допомога в переміщенні файлів
+- Path Intellisense: автодоповнення шляхів
+
+• WebStorm для TypeScript:
+- Вбудовані шаблони рефакторингу
+- Аналіз потоку даних
+- Автоматичне виявлення дублювання коду
+Ключові функції:
+- Safe Delete
+- Move Module Members
+- Convert to Arrow Function
+
+3. Автоматизовані інструменти аналізу якості
+• SonarQube для TypeScript:
+- Метрики якості коду
+- Виявлення технічного боргу
+- Відстеження покриття тестами
+Основні метрики:
+- Цикломатична складність
+- Дублювання коду
+- Потенційні вразливості
+
+• CodeClimate:
+- Автоматична оцінка якості коду
+- Відстеження тенденцій
+- Інтеграція з CI/CD
+Можливості:
+- Оцінка підтримуваності
+- Виявлення проблемних паттернів
+- Рекомендації щодо покращення
+
+4. Інструменти для командної роботи
+• Prettier:
+- Автоматичне форматування коду
+- Підтримка TypeScript
+- Інтеграція з Git hooks
+Конфігурація:
+{
+  "printWidth": 80,
+  "tabWidth": 2,
+  "singleQuote": true,
+  "trailingComma": "all"
+}
+
+• Husky:
+- Автоматична перевірка коду перед комітом
+- Запуск тестів
+- Форматування коду
+Приклад налаштування:
+{
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run lint && npm run test",
+      "pre-push": "npm run build"
+    }
+  }
+}
+
+5. Специфічні інструменти для рефакторингу
+• ts-morph:
+- Програмна маніпуляція TypeScript кодом
+- Створення власних трансформацій
+- Автоматизація складних рефакторингів
+
+• TypeScript AST Viewer:
+- Візуалізація AST
+- Допомога в розумінні структури коду
+- Планування рефакторингу
+ 
+ВИСНОВКИ
+
+В результаті дослідження методів рефакторингу коду та їх практичного застосування можна зробити наступні висновки:
+
+1. Ефективність обраних методів:
+• Extract Method довів свою корисність у спрощенні складних методів та покращенні читабельності коду
+• Replace Temp with Query значно покращив структуру об'єктно-орієнтованого коду
+• Introduce Parameter Object суттєво спростив роботу з методами, що мають багато параметрів
+
+2. Практичні результати застосування:
+• Зменшення складності коду - методи стали коротшими та зрозумілішими
+• Покращення тестованості - кожен компонент можна тестувати окремо
+• Спрощення подальшої підтримки - код став більш модульним
+• Зниження ризику помилок - логіка краще організована та інкапсульована
+
+3. Рекомендації щодо впровадження:
+• Починати рефакторинг з найпроблемніших ділянок коду
+• Обов'язково супроводжувати рефакторинг тестами
+• Використовувати автоматизовані інструменти для підвищення ефективності
+• Проводити рефакторинг регулярно, не допускаючи накопичення технічного боргу
+
+
+4. Значення для проекту:
+• Підвищення якості кодової бази
+• Прискорення розробки нових функцій
+• Зменшення часу на розуміння коду новими розробниками
+• Зниження вартості підтримки проекту
+
+5. Перспективи розвитку:
+• Впровадження автоматизованих інструментів рефакторингу в процес розробки
+• Створення стандартів та гайдлайнів для команди
+• Регулярний аудит якості коду
+• Навчання команди сучасним практикам рефакторингу
+
+Таким чином, застосування розглянутих методів рефакторингу є необхідною складовою професійної розробки програмного забезпечення, що дозволяє підтримувати високу якість коду протягом всього життєвого циклу проекту.
+ 
+ДОДАТОК А
+Список використаних джерел
+
+1. Martin, R. C. (2019). Clean Code: A Handbook of Agile Software Craftsmanship. FABULA.
+
+2. Fowler, M. (2018). Refactoring: Improving the Design of Existing Code (2nd Edition). Addison-Wesley Professional.
+
+3. TypeScript Documentation. (2024). Microsoft. https://www.typescriptlang.org/docs/
+
+4. Gamma, E., Helm, R., Johnson, R., & Vlissides, J. (1994). Design Patterns: Elements of Reusable Object-Oriented Software. Addison-Wesley.
+
+5. Freeman, S., & Pryce, N. (2009). Growing Object-Oriented Software, Guided by Tests. Addison-Wesley Professional.
+
+ 
+ДОДАТОК Б
+Відео
+
+https://youtu.be/vVe8cFmOcmM
+ 
+ДОДАТОК В 
+Презентація
