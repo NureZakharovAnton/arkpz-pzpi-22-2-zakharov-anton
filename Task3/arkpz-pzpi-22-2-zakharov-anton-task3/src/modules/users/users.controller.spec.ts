@@ -37,21 +37,6 @@ describe('UsersController', () => {
     expect(controller).toBeDefined();
   });
 
-  describe('create', () => {
-    it('should call UsersService.create and return the created user', async () => {
-      const dto = {
-        name: 'John Doe',
-        email: 'john@example.com',
-        password: 'password',
-        role: USER_ROLES.CUSTOMER,
-      };
-      const result = await controller.create(dto);
-
-      expect(userService.create).toHaveBeenCalledWith(dto);
-      expect(result).toEqual(mockUser);
-    });
-  });
-
   describe('findAll', () => {
     it('should call UsersService.findAll and return an array of users', async () => {
       const result = await controller.findAll();

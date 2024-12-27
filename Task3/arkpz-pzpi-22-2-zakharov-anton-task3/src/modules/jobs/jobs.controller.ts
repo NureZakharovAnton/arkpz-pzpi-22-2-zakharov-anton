@@ -7,13 +7,15 @@ import {
   Put,
   Delete,
 } from '@nestjs/common';
-import { CreateJobDto, UpdateJobDto } from './jobs.dto';
-import { JobsService } from './jobs.service';
 import { JobAttemptsService } from '../job-attempts/job-attempts.service';
 import {
   CreateJobAttemptDto,
   UpdateJobAttemptDto,
 } from '../job-attempts/job-attempts.dto';
+import { USER_ROLES } from '../users/user.constants';
+import { Roles } from '../users/users.decorators';
+import { CreateJobDto, UpdateJobDto } from './jobs.dto';
+import { JobsService } from './jobs.service';
 
 @Controller('jobs')
 export class JobsController {
@@ -22,6 +24,7 @@ export class JobsController {
     private readonly jobAttemptsService: JobAttemptsService,
   ) {}
 
+  @Roles(USER_ROLES.ADMIN, USER_ROLES.CUSTOMER)
   @Post()
   async create(@Body() body: CreateJobDto) {
     return this.jobsService.create(body);
