@@ -12,6 +12,7 @@ import { JobAttemptsModule } from './modules/job-attempts/job-attempts.module';
 import { ProposalsModule } from './modules/proposals/proposals.module';
 import { AuthGuard } from './modules/auth/auth.guard';
 import { RolesGuard } from './modules/users/users.guards';
+import { MailModule } from './modules/mail/mail.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { RolesGuard } from './modules/users/users.guards';
     ReviewsModule,
     JobAttemptsModule,
     ProposalsModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [
