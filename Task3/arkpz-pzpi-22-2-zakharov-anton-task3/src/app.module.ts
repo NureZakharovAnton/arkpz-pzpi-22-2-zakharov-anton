@@ -11,6 +11,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
 import { JobAttemptsModule } from './modules/job-attempts/job-attempts.module';
 import { ProposalsModule } from './modules/proposals/proposals.module';
 import { AuthGuard } from './modules/auth/auth.guard';
+import { RolesGuard } from './modules/users/users.guards';
 
 @Module({
   imports: [
@@ -30,6 +31,10 @@ import { AuthGuard } from './modules/auth/auth.guard';
     {
       provide: 'APP_GUARD',
       useClass: AuthGuard,
+    },
+    {
+      provide: 'APP_GUARD',
+      useClass: RolesGuard,
     },
   ],
 })

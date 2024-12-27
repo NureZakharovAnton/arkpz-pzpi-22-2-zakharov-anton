@@ -7,6 +7,8 @@ import {
   Put,
   Delete,
 } from '@nestjs/common';
+import { Roles } from '../users/users.decorators';
+import { USER_ROLES } from '../users/user.constants';
 import { ProposalsService } from './proposals.service';
 import { CreateProposalDto, UpdateProposalDto } from './proposals.dto';
 
@@ -14,11 +16,13 @@ import { CreateProposalDto, UpdateProposalDto } from './proposals.dto';
 export class ProposalsController {
   constructor(private readonly proposalsService: ProposalsService) {}
 
+  @Roles(USER_ROLES.ADMIN, USER_ROLES.FREELANCER)
   @Post()
   async create(@Body() body: CreateProposalDto) {
     return this.proposalsService.create(body);
   }
 
+  @Roles(USER_ROLES.ADMIN)
   @Get()
   async findAll() {
     return this.proposalsService.findAll();
