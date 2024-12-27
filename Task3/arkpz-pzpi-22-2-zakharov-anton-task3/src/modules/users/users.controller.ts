@@ -12,10 +12,14 @@ import { UsersService } from './users.service';
 import { UpdateUserDto } from './users.dto';
 import { AllowSameUser, Roles } from './users.decorators';
 import { USER_ROLES } from './user.constants';
+import { MailService } from '../mail/mail.service';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly userService: UsersService) {}
+  constructor(
+    private readonly userService: UsersService,
+    private readonly mailService: MailService,
+  ) {}
 
   @Get('me')
   getProfile(@Request() req) {
@@ -24,9 +28,16 @@ export class UsersController {
 
   @Delete('me')
   async deleteProfile(@Request() req) {
+    console.log('trigger');
     const id = req.user?.sub;
+    const result = await this.userService.deleteById(id);
 
-    return this.userService.deleteById(id);
+    this.mailService.sendAccountDeletionEmail({
+      email: result.email,
+      name: result.name,
+    });
+
+    return result;
   }
 
   @Roles(USER_ROLES.ADMIN)
@@ -35,8 +46,6 @@ export class UsersController {
     return this.userService.findAll();
   }
 
-  @Roles(USER_ROLES.ADMIN)
-  @AllowSameUser()
   @Get(':id')
   async findById(@Param('id') id: string) {
     return this.userService.findById(id);

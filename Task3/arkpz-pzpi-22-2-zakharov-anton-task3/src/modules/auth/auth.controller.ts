@@ -1,12 +1,16 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/users.dto';
+import { MailService } from '../mail/mail.service';
+import { AuthService } from './auth.service';
 import { LoginDto } from './auth.dto';
 import { Public } from './auth.decorators';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly mailService: MailService,
+  ) {}
 
   @Public()
   @Post('login')
@@ -17,6 +21,13 @@ export class AuthController {
   @Public()
   @Post('register')
   async register(@Body() body: CreateUserDto) {
-    return this.authService.register(body);
+    const result = await this.authService.register(body);
+
+    this.mailService.sendWelcomeEmail({
+      email: body.email,
+      name: body.name,
+    });
+
+    return result;
   }
 }
