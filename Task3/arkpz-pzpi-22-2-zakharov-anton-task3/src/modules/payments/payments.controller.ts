@@ -27,7 +27,7 @@ export class PaymentController {
       invoiceNumber: payment.id,
     });
 
-    return;
+    return payment;
   }
 
   @Roles(USER_ROLES.ADMIN)
