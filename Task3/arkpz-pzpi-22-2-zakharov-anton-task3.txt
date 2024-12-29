@@ -1,0 +1,335 @@
+Харківський університет радіоелектроніки
+Факультет комп'ютерних наук
+Кафедра програмної інженерії
+
+
+
+
+
+ЗВІТ
+до лабораторної роботи номер 3 з дисципліни
+"Аналіз та рефакторинг коду"
+на тему: "РОЗРОБКА БІЗНЕС-ЛОГІКИ ТА ФУНКЦІЙ АДМІНІСТРУВАННЯ СЕРВЕРНОЇ ЧАСТИНИ ПРОГРАМНОЇ СИСТЕМИ"
+
+
+
+
+
+Виконав ст. гр. ПЗПІ-22-2
+Захаров Антон Володимирович
+
+Перевірив
+ст. викладач кафедри ПІ
+Сокорчук Ігор Петрович
+ 
+
+
+
+Харків 2024
+1 МЕТА
+
+Метою роботи було створення серверного компоненту системи з фокусом на імплементацію бізнес-логіки та адміністративних функцій.
+
+2 ХІД РОБОТИ
+
+В процесі розробки було реалізовано такі ключові компоненти: 
+– підключення до поштового сервісу Gmail для відправлення системних повідомлень; 
+– впровадження криптографічного захисту паролів користувачів;
+ – створення системи керування користувацькими сесіями за допомогою JWT токенів;
+– розмежування прав доступу користувачів в залежності від ролі; 
+– розробка адміністративного модуля з ексклюзивними правами доступу. 
+Для візуалізації архітектури створено два типи UML-діаграм: діаграму діяльності серверної частини (Додаток А) та діаграму взаємодії компонентів (Додаток Б).
+
+ВИСНОВКИ
+
+Виконана робота забезпечила створення повноцінної серверної частини з необхідною бізнес-логікою та адміністративними можливостями. Додатково розроблені UML-діаграми наочно демонструють робочі процеси та взаємозв'язки в системі.
+ 
+ДОДАТОК А
+UML ДІАГРАМА ДІЯЛЬНОСТІ
+
+  
+ДОДАТОК Б 
+UML ДІАГРАМА ВЗАЄМОДІЇ
+
+ 
+ 
+ДОДАТОК В
+ФРАГМЕНТИ ПРОГРАМНОГО КОДУ
+
+B.1 Фрагмент коду сервісу пошти:
+1  @Injectable()
+2  export class MailService {
+3    constructor(
+4      private mailerService: MailerService,
+5      private configService: ConfigService,
+6    ) {}
+7  
+8    private async sendMail(options: {
+9      to: string;
+10     subject: string;
+11     template: string;
+12     context: any;
+13   }) {
+14     try {
+15       this.mailerService.sendMail({
+16         to: options.to,
+17         subject: options.subject,
+18         template: options.template,
+19         context: {
+20           ...options.context,
+21           appName: 'App',
+22           supportEmail: this.configService.get('MAIL_PROVIDER_EMAIL'),
+23           currentYear: new Date().getFullYear(),
+24         },
+25       });
+26       return true;
+27     } catch (error) {
+28       console.error('Email sending failed:', error);
+29       return false;
+30     }
+31   }
+32 
+33   async sendWelcomeEmail(user: { email: string; name: string }) {
+34     return await this.sendMail({
+35       to: user.email,
+36       subject: 'Welcome to Our Platform!',
+37       template: 'welcome',
+38       context: {
+39         name: user.name,
+40       },
+41     });
+42   }
+43 
+44   async sendAccountDeletionEmail(user: { email: string; name: string }) {
+45     return await this.sendMail({
+46       to: user.email,
+47       subject: 'Account Deletion Confirmation',
+48       template: 'account-deletion',
+49       context: {
+50         name: user.name,
+51         appName: 'App',
+52         currentYear: new Date().getFullYear(),
+53         supportEmail: this.configService.get('MAIL_PROVIDER_EMAIL'),
+54       },
+55     });
+56   }
+57 
+58   async sendInvoiceEmail(options: {
+59     email: string;
+60     name: string;
+61     invoiceNumber: string;
+62     amount: number;
+63   }) {
+64     return await this.sendMail({
+65       to: options.email,
+66       subject: `Invoice #${options.invoiceNumber}`,
+67       template: 'invoice',
+68       context: {
+69         name: options.name,
+70         invoiceNumber: options.invoiceNumber,
+71         amount: options.amount,
+72       },
+73     });
+74   }
+75 }
+
+
+B.2 Фрагмент коду модуля пошти:
+1  @Module({
+2    imports: [
+3      MailerModule.forRootAsync({
+4        imports: [ConfigModule],
+5        useFactory: async (config: ConfigService) => ({
+6          transport: {
+7            host: 'smtp.gmail.com',
+8            secure: true,
+9            auth: {
+10             user: config.get('MAIL_PROVIDER_EMAIL'),
+11             pass: config.get('MAIL_PROVIDER_PASSWORD'),
+12           },
+13         },
+14         defaults: {
+15           from: config.get('MAIL_PROVIDER_EMAIL'),
+16         },
+17         template: {
+18           dir: join(__dirname, 'templates'),
+19           adapter: new HandlebarsAdapter(),
+20           options: {
+21             strict: true,
+22           },
+23         },
+24       }),
+25       inject: [ConfigService],
+26     }),
+27   ],
+28   providers: [MailService],
+29   exports: [MailService],
+30 })
+31 export class MailModule {}
+
+
+B.3 Фрагмент коду аутентифікації:
+1  @Injectable()
+2  export class AuthGuard implements CanActivate {
+3    constructor(
+4      private jwtService: JwtService,
+5      private reflector: Reflector,
+6    ) {}
+7  
+8    async canActivate(context: ExecutionContext): Promise<boolean> {
+9      const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+10       context.getHandler(),
+11       context.getClass(),
+12     ]);
+13     if (isPublic) {
+14       return true;
+15     }
+16 
+17     const request = context.switchToHttp().getRequest();
+18     const token = this.extractTokenFromHeader(request);
+19     if (!token) {
+20       throw new UnauthorizedException();
+21     }
+22     try {
+23       const payload = await this.jwtService.verifyAsync(token, {
+24         secret: process.env.JWT_SECRET,
+25       });
+26       request['user'] = payload;
+27     } catch {
+28       throw new UnauthorizedException();
+29     }
+30     return true;
+31   }
+32 
+33   private extractTokenFromHeader(request: Request): string | undefined {
+34     const [type, token] = request.headers.authorization?.split(' ') ?? [];
+35     return type === 'Bearer' ? token : undefined;
+36   }
+37 }
+
+
+B.4 Фрагмент коду авторизації:
+1  @Injectable()
+2  export class RolesGuard implements CanActivate {
+3    constructor(private reflector: Reflector) {}
+4  
+5    canActivate(context: ExecutionContext): boolean {
+6      const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(
+7        ROLES_KEY,
+8        [context.getHandler(), context.getClass()],
+9      );
+10 
+11     const isSameUserAllowed = this.reflector.getAllAndOverride<boolean>(
+12       ALLOW_SAME_USER,
+13       [context.getHandler(), context.getClass()],
+14     );
+15 
+16     if (!requiredRoles) {
+17       return true;
+18     }
+19 
+20     const { user } = context.switchToHttp().getRequest();
+21 
+22     const isSameUser = user.sub === context.getArgs()[0].params.id;
+23     const isRoleAllowed = this.matchRoles(requiredRoles, user.role);
+24 
+25     const isAllowed = isRoleAllowed || (isSameUserAllowed && isSameUser);
+26     return isAllowed;
+27   }
+28 
+29   matchRoles(requiredRoles: UserRole[], userRole: UserRole) {
+30     return requiredRoles.some((role) => userRole?.includes(role));
+31   }
+32 }
+
+
+B.5 Фрагмент коду листа:
+1  <html>
+2    <head>
+3      <meta charset='utf-8' />
+4      <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+5      <title>Welcome to {{appName}}</title>
+6      <style>
+7        body { 
+8          font-family: 'Roboto', 'Helvetica', sans-serif; 
+9          line-height: 1.6;
+10         margin: 0; 
+11         padding: 0; 
+12         background-color: #f5f5f5; 
+13       } 
+14       .container {
+15         max-width: 600px; 
+16         margin: 20px auto; 
+17         background: white; 
+18         border-radius: 8px; 
+19         box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+20       } 
+21       .header { 
+22         background: #1976D2; 
+23         color: white; 
+24         padding: 30px 20px; 
+25         text-align: center;
+26         border-radius: 8px 8px 0 0; 
+27       } 
+28       .content { 
+29         padding: 30px 20px; 
+30         color: #333;
+31       } 
+32       .btn { 
+33         display: inline-block; 
+34         padding: 12px 24px; 
+35         background: #1976D2;
+36         color: white; 
+37         text-decoration: none; 
+38         border-radius: 4px; 
+39         margin: 20px 0;
+40         text-align: center; 
+41       } 
+42       .footer { 
+43         background: #f8f9fa; 
+44         padding: 20px;
+45         text-align: center; 
+46         font-size: 12px; 
+47         color: #666; 
+48         border-radius: 0 0 8px 8px; 
+49       } 
+50       .features { 
+51         margin: 20px 0; 
+52         padding: 20px; 
+53         background: #f8f9fa;
+54         border-radius: 4px; 
+55       }
+56     </style>
+57   </head>
+58   <body>
+59     <div class='container'>
+60       <div class='header'>
+61         <h1>Welcome to {{appName}}!</h1>
+62       </div>
+63       <div class='content'>
+64         <h2>Hello {{name}},</h2>
+65         <p>Thank you for joining {{appName}}! We're excited to have you as part of our community.</p>
+66 
+67         <div class='features'>
+68           <h3>Get Started with These Steps:</h3>
+69           <ul>
+70             <li>Complete your profile</li>
+71             <li>Explore our features</li>
+72             <li>Connect with the community</li>
+73           </ul>
+74         </div>
+75 
+76         <p>Need help? Our support team is always here to assist you.</p>
+77       </div>
+78       <div class='footer'>
+79         <p>© {{currentYear}} {{appName}}. All rights reserved.</p>
+80         <p>You're receiving this email because you recently signed up for an account.</p>
+81       </div>
+82     </div>
+83   </body>
+84 </html>
+ 
+ДОДАТОК Г
+ВІДЕО НА ЮТУБ
+
+https://www.youtube.com/watch?v=JjIXjMzLpvU
