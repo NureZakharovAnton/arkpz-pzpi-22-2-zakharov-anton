@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { CreatePaymentDto } from './payments.dto';
 import { Payment } from './payment.entity';
 import { PaymentDocument } from './payment.types';
+import { PAYMENT_STATUSES } from './payment.constants';
 
 @Injectable()
 export class PaymentService {
@@ -12,7 +13,10 @@ export class PaymentService {
   ) {}
 
   async create(createPaymentDto: CreatePaymentDto) {
-    const createdPayment = await this.paymentModel.create(createPaymentDto);
+    const createdPayment = await this.paymentModel.create({
+      ...createPaymentDto,
+      status: PAYMENT_STATUSES.SUCCESS,
+    });
     return createdPayment;
   }
 
