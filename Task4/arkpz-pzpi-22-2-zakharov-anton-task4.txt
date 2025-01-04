@@ -1,0 +1,292 @@
+Харківський університет радіоелектроніки
+Факультет комп'ютерних наук
+Кафедра програмної інженерії
+
+
+
+
+
+
+ЗВІТ
+до лабораторної роботи номер 4 з дисципліни
+"Аналіз та рефакторинг коду"
+на тему: " РОЗРОБКА IoT КЛІЄНТА"
+
+
+
+
+Виконав ст. гр. ПЗПІ-22-2
+Захаров Антон Володимирович
+
+Перевірив
+ст. викладач кафедри ПІ
+Сокорчук Ігор Петрович
+ 
+
+
+
+
+Харків 2024
+1 МЕТА
+
+Метою роботи є створення пристрою моніторингу завдань на базі мікроконтролера, який дозволяє переглядати список робіт та їх поточний статус через світлодіодну індикацію.
+
+2 ХІД РОБОТИ
+
+В рамках виконання роботи було розроблено пристрій для візуалізації статусів завдань з веб-застосунку.
+Технічна реалізація включає:
+•	Мікроконтролер для обробки даних
+•	Три світлодіоди (червоний, жовтий, зелений) для індикації статусу
+•	Дві кнопки для навігації між завданнями
+•	LCD дисплей для відображення назви завдання
+Функціональні можливості:
+•	Відображення назви поточного завдання на екрані
+•	Індикація статусу завдання через світлодіоди:
+•	Червоний - завдання не виконано
+•	Жовтий - завдання в процесі
+•	Зелений - завдання виконано
+•	Перемикання між завданнями за допомогою кнопок
+•	Автоматичне оновлення даних кожні кілька секунд
+Технічні характеристики:
+•	Підключення до веб-застосунку через WiFi
+•	Періодичний запит оновлених даних
+•	Збереження останнього активного завдання
+•	Візуальна індикація процесу оновлення даних
+Програмна реалізація включає:
+•	Налаштування WiFi з'єднання
+•	Обробку натискань кнопок
+•	Керування світлодіодами та дисплеєм
+•	Парсинг отриманих даних про завдання
+•	Оновлення інформації в реальному часі
+
+ВИСНОВКИ
+
+В результаті роботи створено функціональний пристрій для моніторингу завдань, що дозволяє зручно переглядати список робіт та їх статуси через апаратну індикацію. Реалізовано базовий функціонал навігації та автоматичного оновлення даних. Було розроблено діаграму прецендентів (додаток А), діаграму діяльності (додаток Б). Розроблено код для IoT клієнта (додаток В). Було зроблено запис відео (додаток Г).
+ 
+ДОДАТОК А
+UML ДІАГРАМА ПРЕЦЕДЕНТІВ
+
+ 
+ 
+ДОДАТОК Б
+UML ДІАГРАМИ ДІЯЛЬНОСТІ
+
+ 
+ 
+ДОДАТОК В
+ФРАГМЕНТИ ПРОГРАМНОГО КОДУ
+
+В.1 Файл sketch.ino:
+1.  #include <WiFi.h>
+2.  #include <HTTPClient.h>
+3.  #include <ArduinoJson.h>
+4.  #include <LiquidCrystal.h>
+5.  
+6.  const int buttonPin = 15; 
+7.  const int buttonPrevPin = 4;
+8.  
+9.  const int RS = 21;
+10. const int EN = 19;
+11. const int D4 = 18;
+12. const int D5 = 5;
+13. const int D6 = 17;
+14. const int D7 = 16;
+15. 
+16. const int YELLOW_LED = 12;
+17. const int RED_LED = 13;
+18. const int GREEN_LED = 14;
+19. 
+20. LiquidCrystal lcd(RS, EN, D4, D5, D6, D7);
+21. 
+22. const char* ssid = "Wokwi-GUEST";
+23. const char* password = "";
+24. const char* serverUrl = "http://48a1-46-150-17-223.ngrok-free.app/api/v1/jobs";
+25. 
+26. int currentJobIndex = 0;
+27. 
+28. void setup() {
+29.     Serial.begin(115200);
+30. 
+31.     pinMode(buttonPin, INPUT);
+32.     pinMode(buttonPrevPin, INPUT);
+33. 
+34.     pinMode(YELLOW_LED, OUTPUT);
+35.     pinMode(RED_LED, OUTPUT);
+36.     pinMode(GREEN_LED, OUTPUT);
+37.     
+38.     lcd.begin(16, 2);
+39.     lcd.print("Name:");
+40.     
+41.     WiFi.begin(ssid, password);
+42. 
+43.     while (WiFi.status() != WL_CONNECTED) {
+44.         delay(1000);
+45.         Serial.println("Connecting to WiFi...");
+46.     }
+47.     Serial.println("Connected to WiFi");
+48. }
+49. 
+50. void loop() {
+51.     if (WiFi.status() == WL_CONNECTED) {
+52.         HTTPClient http;
+53.         
+54.         http.begin(serverUrl);
+55.         http.addHeader("Accept", "application/json");
+56. 
+57.         int httpResponseCode = http.GET();
+58. 
+59.         if (httpResponseCode > 0) {
+60.             String payload = http.getString();
+61.             Serial.println("HTTP Response code: " + String(httpResponseCode));
+62.             Serial.println("Response data: " + payload);
+63. 
+64.             DynamicJsonDocument doc(200);
+65.             DeserializationError error = deserializeJson(doc, payload);
+66.             
+67.             if (!error) {
+68.                 String status = doc[currentJobIndex]["status"].as<String>();
+69.                 String name = doc[currentJobIndex]["name"].as<String>();
+70. 
+71.                 lcd.setCursor(0, 1);
+72.                 lcd.print("                ");
+73.                 lcd.setCursor(0, 1);
+74.                 lcd.print(name);
+75. 
+76.                 Serial.println(status);
+77.                 updateStatus(status);
+78. 
+79.                 int buttonState = digitalRead(buttonPin);
+80.                 int buttonPrevState = digitalRead(buttonPrevPin);
+81. 
+82.                 if (buttonState == LOW && doc.size() > currentJobIndex + 1) {
+83.                     currentJobIndex += 1; 
+84.                     Serial.println(currentJobIndex);
+85.                     delay(500); 
+86.                 }
+87. 
+88.                 if (buttonPrevState == HIGH && 0 < currentJobIndex) {
+89.                     currentJobIndex -= 1; 
+90.                     Serial.println(currentJobIndex);
+91.                     delay(500); 
+92.                 }
+93.             }
+94.         } else {
+95.             Serial.println("Error on HTTP request");
+96.         }
+97. 
+98.         http.end();
+99.     }
+100. }
+101. 
+102. void updateStatus(String status) {
+103.     digitalWrite(YELLOW_LED, LOW);
+104.     digitalWrite(RED_LED, LOW);
+105.     digitalWrite(GREEN_LED, LOW);
+106. 
+107.     Serial.println("Status received: '" + status + "'");
+108.     Serial.println("Status length: " + String(status.length()));
+109. 
+110.     if (status.equals("inProgress")) {
+111.         Serial.println("Matching inProgress");
+112.         digitalWrite(YELLOW_LED, HIGH);
+113.     }
+114.     else if (status.equals("failed")) {
+115.         Serial.println("Matching failed");
+116.         digitalWrite(RED_LED, HIGH);
+117.     }
+118.     else if (status.equals("completed")) {
+119.         Serial.println("Matching completed");
+120.         digitalWrite(GREEN_LED, HIGH);
+121.     }
+122.     else {
+123.         Serial.println("No status match found");
+124.         for(int i = 0; i < status.length(); i++) {
+125.             Serial.print("Char at " + String(i) + ": ");
+126.             Serial.println(status[i], DEC);
+127.         }
+128.     }
+129. }
+
+В.2 Файл diagram.json:
+1.  {
+2.    "version": 1,
+3.    "author": "Anton Zakharov",
+4.    "editor": "wokwi",
+5.    "parts": [
+6.      { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": -9.6, "left": 14.44, "attrs": {} },
+7.      { "type": "wokwi-led", "id": "led1", "top": 6, "left": 195.8, "attrs": { "color": "yellow" } },
+8.      { "type": "wokwi-led", "id": "led2", "top": 15.6, "left": 243.8, "attrs": { "color": "red" } },
+9.      {
+10.       "type": "wokwi-led",
+11.       "id": "led3", 
+12.       "top": 25.2,
+13.       "left": 301.4,
+14.       "attrs": { "color": "green" }
+15.     },
+16.     {
+17.       "type": "wokwi-resistor",
+18.       "id": "r1",
+19.       "top": 243.95,
+20.       "left": 57.6,
+21.       "attrs": { "value": "220" }
+22.     },
+23.     {
+24.       "type": "wokwi-resistor",
+25.       "id": "r2",
+26.       "top": 205.55,
+27.       "left": 220.8,
+28.       "attrs": { "value": "220" }
+29.     },
+30.     { "type": "wokwi-resistor", "id": "r3", "top": 100, "left": 300, "attrs": { "value": "220" } },
+31.     { "type": "wokwi-lcd1602", "id": "lcd1", "top": -111.77, "left": -454.4, "attrs": {} },
+32.     {
+33.       "type": "wokwi-pushbutton",
+34.       "id": "btn2",
+35.       "top": 284.6,
+36.       "left": 163.2,
+37.       "attrs": { "color": "green" }
+38.     },
+39.     {
+40.       "type": "wokwi-pushbutton",
+41.       "id": "btn1",
+42.       "top": 361.4,
+43.       "left": 172.8,
+44.       "attrs": { "color": "green" }
+45.     }
+46.   ],
+47.   "connections": [
+48.     [ "esp:TX", "$serialMonitor:RX", "", [] ],
+49.     [ "esp:RX", "$serialMonitor:TX", "", [] ],
+50.     [ "esp:GPIO12", "r1:1", "yellow", [] ],
+51.     [ "r1:2", "led1:A", "yellow", [] ],
+52.     [ "esp:GPIO13", "r2:1", "red", [] ],
+53.     [ "r2:2", "led2:A", "red", [] ],
+54.     [ "esp:GPIO14", "r3:1", "green", [] ],
+55.     [ "r3:2", "led3:A", "green", [] ],
+56.     [ "led3:C", "esp:GND.1", "black", [ "v0" ] ],
+57.     [ "led2:C", "esp:GND.1", "black", [ "v0" ] ],
+58.     [ "led1:C", "esp:GND.1", "black", [ "v0" ] ],
+59.     [ "r1:1", "esp:12", "yellow", [ "v0" ] ],
+60.     [ "r2:1", "esp:13", "red", [ "v0" ] ],
+61.     [ "r3:1", "esp:14", "green", [ "v-0.05", "h-156" ] ],
+62.     [ "lcd1:K", "esp:GND.1", "black", [ "v0" ] ],
+63.     [ "lcd1:A", "esp:3V3", "green", [ "v105.6", "h345.5", "v-28.8", "h19.2", "v-115.2" ] ],
+64.     [ "lcd1:RS", "esp:21", "green", [ "v0" ] ],
+65.     [ "lcd1:E", "esp:19", "green", [ "v115.2", "h249.6", "v38.4", "h115.2" ] ],
+66.     [ "lcd1:D4", "esp:18", "green", [ "v19.2", "h220.8" ] ],
+67.     [ "lcd1:D5", "esp:5", "green", [ "v76.8", "h460.9", "v28.8" ] ],
+68.     [ "lcd1:D6", "esp:17", "green", [ "v0", "h307.4", "v-9.6" ] ],
+69.     [ "lcd1:D7", "esp:16", "green", [ "v0" ] ],
+70.     [ "btn2:1.l", "esp:15", "green", [ "h-19.2", "v-134.4" ] ],
+71.     [ "btn1:1.l", "esp:4", "green", [ "h-38.4", "v-240" ] ],
+72.     [ "btn1:1.l", "esp:GND.3", "green", [ "h9.6", "v-278.4" ] ],
+73.     [ "btn1:2.l", "esp:5V", "green", [ "h-153.6", "v-28.6" ] ],
+74.     [ "btn2:2.l", "esp:GND.1", "green", [ "h-163.2", "v-172.6" ] ]
+75.   ],
+76.   "dependencies": {}
+77. }
+ 
+ДОДАТОК Г
+ВІДЕО НА ЮТУБ
+
+https://www.youtube.com/watch?v=41e38uUFQR8
