@@ -24,7 +24,7 @@ export class RolesGuard implements CanActivate {
 
     const { user } = context.switchToHttp().getRequest();
 
-    const isSameUser = user.sub === context.getArgs()[0].params.id;
+    const isSameUser = user?.sub === context.getArgs()[0].params.id;
     const isRoleAllowed = this.matchRoles(requiredRoles, user.role);
 
     const isAllowed = isRoleAllowed || (isSameUserAllowed && isSameUser);
