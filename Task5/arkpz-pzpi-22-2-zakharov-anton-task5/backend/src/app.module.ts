@@ -13,6 +13,7 @@ import { ProposalsModule } from './modules/proposals/proposals.module';
 import { AuthGuard } from './modules/auth/auth.guard';
 import { RolesGuard } from './modules/users/users.guards';
 import { MailModule } from './modules/mail/mail.module';
+import { BackupsModule } from './modules/backups/backups.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { MailModule } from './modules/mail/mail.module';
     JobAttemptsModule,
     ProposalsModule,
     MailModule,
+    BackupsModule,
   ],
   controllers: [AppController],
   providers: [
