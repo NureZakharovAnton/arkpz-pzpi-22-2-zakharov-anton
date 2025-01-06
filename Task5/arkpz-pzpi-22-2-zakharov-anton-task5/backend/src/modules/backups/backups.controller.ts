@@ -1,7 +1,6 @@
 import { Controller, Post, Get, Param } from '@nestjs/common';
 import { Roles } from '../users/users.decorators';
 import { USER_ROLES } from '../users/user.constants';
-import { Public } from '../auth/auth.decorators';
 import { BackupsService } from './backups.service';
 
 @Roles(USER_ROLES.ADMIN)
@@ -19,7 +18,6 @@ export class BackupsController {
     return this.backupService.createBackup();
   }
 
-  @Public()
   @Post(':name')
   async restoreBackup(@Param('name') name: string) {
     return this.backupService.restoreBackup(name);

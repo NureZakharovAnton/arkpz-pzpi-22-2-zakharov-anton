@@ -28,7 +28,6 @@ export class UsersController {
 
   @Delete('me')
   async deleteProfile(@Request() req) {
-    console.log('trigger');
     const id = req.user?.sub;
     const result = await this.userService.deleteById(id);
 
